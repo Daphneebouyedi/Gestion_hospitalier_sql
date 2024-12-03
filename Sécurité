@@ -1,5 +1,5 @@
 /*****************************************************************************************/
-/*             1. CREATION DES UTILSIATEURS AVEC DES MOTS DE PASSES SECURISES            */
+/*             1. CREATION DES UTILISATEURS AVEC DES MOTS DE PASSES SECURISES            */
 /*****************************************************************************************/
 
 -- Créer des utilisateurs avec des mots de passe sécurisés

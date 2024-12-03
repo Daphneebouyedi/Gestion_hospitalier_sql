@@ -1,0 +1,13 @@
+/*****************************************************************************************/
+/*             1. CREATION DES UTILSIATEURS AVEC DES MOTS DE PASSES SECURISES            */
+/*****************************************************************************************/
+
+-- Créer des utilisateurs avec des mots de passe sécurisés
+CREATE USER 'receptionniste'@'localhost' IDENTIFIED BY 'QwtER@1kloguifuFDHUJkh';
+CREATE USER 'medecin'@'localhost' IDENTIFIED BY 'BZarP@5TTYlkOdfZG';
+CREATE USER 'comptable'@'localhost' IDENTIFIED BY 'AzERt@23t89hjTiY';
+
+/*****************************************************************************************/
+/*             2. ATTRIBUTION DES PRIVILEGES                                             */
+/*****************************************************************************************/
+

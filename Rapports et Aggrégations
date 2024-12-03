@@ -1,0 +1,143 @@
+-- Rapports et aggregation --
+DELIMITER $$
+
+CREATE PROCEDURE Rapport_Complet_Medecin(
+    IN p_id_Medecin INT
+)
+BEGIN
+    -- Rapport détaillé des patients par médecin
+    SELECT 
+        p.id_Patient,
+        p.nom_Patient,
+        p.prenom_Patient,
+        p.genre_Patient,
+        p.date_naissance,
+        f.Pathologie,
+        t.date_heure AS date_Traitement
+    FROM Patient p
+    JOIN Feuille f ON p.id_Patient = f.id_dossier
+    JOIN Traitement t ON f.id_Feuille = t.id_Feuille
+    WHERE t.id_Medecin = p_id_Medecin;
+
+    -- Nombre total de patients traités par le médecin
+    SELECT 
+        COUNT(DISTINCT p.id_Patient) AS nombre_patients
+    FROM Patient p
+    JOIN Feuille f ON p.id_Patient = f.id_dossier
+    JOIN Traitement t ON f.id_Feuille = t.id_Feuille
+    WHERE t.id_Medecin = p_id_Medecin;
+
+    -- Nombre d'adultes et de mineurs
+    SELECT
+        SUM(CASE WHEN TIMESTAMPDIFF(YEAR, p.date_naissance, CURDATE()) >= 18 THEN 1 ELSE 0 END) AS nombre_adultes,
+        SUM(CASE WHEN TIMESTAMPDIFF(YEAR, p.date_naissance, CURDATE()) < 18 THEN 1 ELSE 0 END) AS nombre_mineurs
+    FROM Patient p;
+
+    -- Nombre de patients sortis de l'hôpital
+    SELECT 
+        COUNT(*) AS nombre_patients_sortis
+    FROM Patient p
+    WHERE p.id_Chambre IS NULL;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE Rapport_Revenu_Par_Comptable()
+BEGIN
+    SELECT 
+        c.id_Comptable,
+        c.nom_Comptable,
+        c.prenom_Comptable,
+        SUM(f.montant) AS revenu_total
+    FROM Comptable c
+    JOIN Facturation f ON c.id_Comptable = f.id_Comptable
+    WHERE f.est_Payee = TRUE
+    GROUP BY c.id_Comptable;
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE Rapport_Utilisation_Salles()
+BEGIN
+    SELECT 
+        s.id_Salle,
+        s.nom_Salle,
+        s.type_Salle,
+        COUNT(t.id_Traitement) AS nombre_Utilisations
+    FROM Salle s
+    LEFT JOIN Traitement t ON s.id_Salle = t.id_Salle
+    GROUP BY s.id_Salle;
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE Rapport_Patients_Par_Specialite()
+BEGIN
+    SELECT 
+        m.specialite,
+        COUNT(DISTINCT f.id_dossier) AS nombre_Patients
+    FROM Medecin m
+    JOIN Traitement t ON m.id_Medecin = t.id_Medecin
+    JOIN Feuille f ON t.id_Feuille = f.id_Feuille
+    GROUP BY m.specialite;
+END$$
+
+DELIMITER ;
+DELIMITER $$
+
+CREATE PROCEDURE Rapport_Facturation_Par_Patient()
+BEGIN
+    SELECT 
+        p.id_Patient,
+        p.nom_Patient,
+        p.prenom_Patient,
+        SUM(f.montant) AS montant_Total
+    FROM Patient p
+    JOIN Facturation f ON p.id_Patient = f.id_Patient
+    GROUP BY p.id_Patient;
+END$$
+
+DELIMITER ;
+DELIMITER $$
+
+CREATE PROCEDURE Statistiques_Traitements()
+BEGIN
+    SELECT 
+        COUNT(*) AS nombre_Total_Traitements,
+        AVG(DATEDIFF(CURDATE(), t.date_heure)) AS age_Moyen_Traitements,
+        MIN(t.date_heure) AS premier_Traitement,
+        MAX(t.date_heure) AS dernier_Traitement
+    FROM Traitement t;
+END$$
+
+DELIMITER ;
+DELIMITER $$
+
+CREATE PROCEDURE Rapport_Occupation_Chambres()
+BEGIN
+    SELECT 
+        c.id_Chambre,
+        c.capacite,
+        COUNT(p.id_Patient) AS patients_Actuels,
+        ROUND((COUNT(p.id_Patient) / c.capacite) * 100, 2) AS taux_Occupation
+    FROM Chambre c
+    LEFT JOIN Patient p ON c.id_Chambre = p.id_Chambre
+    GROUP BY c.id_Chambre;
+END$$
+
+DELIMITER ;
+
+
+CALL Rapport_Complet_Medecin(1);
+CALL Rapport_Revenu_Par_Comptable();
+CALL Rapport_Utilisation_Salles();
+CALL Rapport_Facturation_Par_Patient();
+CALL Statistiques_Traitements();
+CALL Rapport_Occupation_Chambres();

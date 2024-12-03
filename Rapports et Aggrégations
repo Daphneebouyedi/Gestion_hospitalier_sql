@@ -1,4 +1,12 @@
--- Rapports et aggregation --
+/************************************************************************************************/
+/*                              RAPPORTS ET AGGREGATIONS                                        */
+/************************************************************************************************/
+
+
+/************************************************************************************************/
+/*                  1. RAPPORT DÉTAILLÉ DU NOMBRE DE PATIENTS PAR MÉDECIN                       */
+/************************************************************************************************/
+
 DELIMITER $$
 
 CREATE PROCEDURE Rapport_Complet_Medecin(
@@ -27,7 +35,7 @@ BEGIN
     JOIN Traitement t ON f.id_Feuille = t.id_Feuille
     WHERE t.id_Medecin = p_id_Medecin;
 
-    -- Nombre d'adultes et de mineurs
+    -- Nombre d'adultes et de mineurs parmi les patients
     SELECT
         SUM(CASE WHEN TIMESTAMPDIFF(YEAR, p.date_naissance, CURDATE()) >= 18 THEN 1 ELSE 0 END) AS nombre_adultes,
         SUM(CASE WHEN TIMESTAMPDIFF(YEAR, p.date_naissance, CURDATE()) < 18 THEN 1 ELSE 0 END) AS nombre_mineurs
@@ -42,11 +50,15 @@ END$$
 
 DELIMITER ;
 
+/************************************************************************************************/
+/*                   2. RAPPORT DES REVENUS PAR COMPTABLE                                       */
+/************************************************************************************************/
 
 DELIMITER $$
 
 CREATE PROCEDURE Rapport_Revenu_Par_Comptable()
 BEGIN
+-- Calculer le revenu total généré par chaque comptable pour les factures payées
     SELECT 
         c.id_Comptable,
         c.nom_Comptable,
@@ -60,10 +72,15 @@ END$$
 
 DELIMITER ;
 
+/************************************************************************************************/
+/*                        3. RAPPORT SUR L'UTILISATION DES SALLES                               */
+/************************************************************************************************/
+
 DELIMITER $$
 
 CREATE PROCEDURE Rapport_Utilisation_Salles()
 BEGIN
+-- Compter le nombre d'utilisations par salle
     SELECT 
         s.id_Salle,
         s.nom_Salle,
@@ -76,10 +93,15 @@ END$$
 
 DELIMITER ;
 
+/************************************************************************************************/
+/*                 4. RAPPORT DU NOMBRE DE PATIENTS PAR SPÉCIALITÉ                              */
+/************************************************************************************************/
+
 DELIMITER $$
 
 CREATE PROCEDURE Rapport_Patients_Par_Specialite()
 BEGIN
+-- Compter le nombre de patients traités par spécialité médicale
     SELECT 
         m.specialite,
         COUNT(DISTINCT f.id_dossier) AS nombre_Patients
@@ -90,10 +112,16 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+/************************************************************************************************/
+/*                   5. RAPPORT DE FACTURATION PAR PATIENT                                      */
+/************************************************************************************************/
+
 DELIMITER $$
 
 CREATE PROCEDURE Rapport_Facturation_Par_Patient()
 BEGIN
+ -- Calculer le montant total facturé par patient
     SELECT 
         p.id_Patient,
         p.nom_Patient,
@@ -105,28 +133,40 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+/************************************************************************************************/
+/*                       6. STATISTIQUES SUR LES TRAITEMENTS                                    */
+/************************************************************************************************/
+
 DELIMITER $$
 
 CREATE PROCEDURE Statistiques_Traitements()
 BEGIN
+  -- Obtenir des statistiques sur les traitements effectués dans l'hôpital
     SELECT 
         COUNT(*) AS nombre_Total_Traitements,
-        AVG(DATEDIFF(CURDATE(), t.date_heure)) AS age_Moyen_Traitements,
-        MIN(t.date_heure) AS premier_Traitement,
-        MAX(t.date_heure) AS dernier_Traitement
+        AVG(DATEDIFF(CURDATE(), t.date_heure)) AS age_Moyen_Traitements,       -- Âge moyen des traitements en jours
+        MIN(t.date_heure) AS premier_Traitement,                               -- Date du premier traitement enregistré
+        MAX(t.date_heure) AS dernier_Traitement                                -- Date du dernier traitement enregistré
     FROM Traitement t;
 END$$
 
 DELIMITER ;
+
+/************************************************************************************************/
+/*                     7. RAPPORT SUR L'OCCUPATION DES CHAMBRES                                 */
+/************************************************************************************************/
+
 DELIMITER $$
 
 CREATE PROCEDURE Rapport_Occupation_Chambres()
 BEGIN
+-- Calculer le taux d'occupation des chambres de l'hôpital
     SELECT 
         c.id_Chambre,
         c.capacite,
-        COUNT(p.id_Patient) AS patients_Actuels,
-        ROUND((COUNT(p.id_Patient) / c.capacite) * 100, 2) AS taux_Occupation
+        COUNT(p.id_Patient) AS patients_Actuels,                                    -- Nombre actuel de patients dans chaque chambre
+        ROUND((COUNT(p.id_Patient) / c.capacite) * 100, 2) AS taux_Occupation       -- Taux d'occupation en pourcentage arrondi à deux décimales 
     FROM Chambre c
     LEFT JOIN Patient p ON c.id_Chambre = p.id_Chambre
     GROUP BY c.id_Chambre;
@@ -134,6 +174,11 @@ END$$
 
 DELIMITER ;
 
+/************************************************************************************************/
+/*                                     APPEL DES PROCÉDURES                                    */
+/************************************************************************************************/
+
+-- Appels des procédures créées pour générer les rapports souhaités.
 
 CALL Rapport_Complet_Medecin(1);
 CALL Rapport_Revenu_Par_Comptable();

@@ -1,13 +1,51 @@
 /*****************************************************************************************/
-/*             1. CREATION DES UTILISATEURS AVEC DES MOTS DE PASSES SECURISES            */
+/*        1. CREATION UTILISATEUR ET ATTRIBUTION PRIVILEGES : RECEPTIONNISTE             */
 /*****************************************************************************************/
 
--- Créer des utilisateurs avec des mots de passe sécurisés
+-- Créer un user Réceptionniste avec un mot de passe sécurisé
 CREATE USER 'receptionniste'@'localhost' IDENTIFIED BY 'QwtER@1kloguifuFDHUJkh';
+
+-- Attribution des privilèges au Réceptionniste
+
+-- Le réceptionniste peut sélectionner, insérer et mettre à jour les informations des patients
+GRANT SELECT, INSERT, UPDATE ON gestion_Hopital_db.Patient TO 'receptionniste'@'localhost';        
+
+-- Le réceptionniste peut sélectionner et insérer des dossiers médicaux
+GRANT SELECT, INSERT ON gestion_Hopital_db.Dossier_Medical TO 'receptionniste'@'localhost';
+
+
+
+/*****************************************************************************************/
+/*        2. CREATION UTILISATEUR ET ATTRIBUTION PRIVILEGES : MEDECIN                    */
+/*****************************************************************************************/
+
+-- Créer un user Medecin avec un mot de passe sécurisé
 CREATE USER 'medecin'@'localhost' IDENTIFIED BY 'BZarP@5TTYlkOdfZG';
+
+-- Attribution des privilèges au Médecin
+-- Le médecin peut sélectionner, insérer et mettre à jour les traitements
+GRANT SELECT, INSERT, UPDATE ON gestion_Hopital_db.Traitement TO 'medecin'@'localhost';
+
+-- Le médecin peut sélectionner les informations des feuilles médicales
+GRANT SELECT ON gestion_Hopital_db.Feuille TO 'medecin'@'localhost';
+
+
+
+/*****************************************************************************************/
+/*        3. CREATION UTILISATEUR ET ATTRIBUTION PRIVILEGES : COMPTABLE                  */
+/*****************************************************************************************/
+
+-- Créer un user Comptable avec un mot de passe sécurisé
 CREATE USER 'comptable'@'localhost' IDENTIFIED BY 'AzERt@23t89hjTiY';
 
-/*****************************************************************************************/
-/*             2. ATTRIBUTION DES PRIVILEGES                                             */
-/*****************************************************************************************/
+-- Attribution des privilèges au Comptable
+-- Le comptable peut sélectionner, insérer et mettre à jour les factures
+GRANT SELECT, INSERT, UPDATE ON gestion_Hopital_db.Facturation TO 'comptable'@'localhost';
 
+-- Le comptable peut sélectionner les informations des patients
+GRANT SELECT ON gestion_Hopital_db.Patient TO 'comptable'@'localhost';
+
+
+
+-- Appliquer les changements pour que les privilèges prennent effet
+FLUSH PRIVILEGES;

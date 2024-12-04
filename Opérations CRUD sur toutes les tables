@@ -18,9 +18,19 @@ CREATE PROCEDURE GererMedecin(
     IN p_genre_Medecin VARCHAR(10)
 )
 BEGIN
+    -- Déclarations des variables locales
+    DECLARE current_nom VARCHAR(50);
+    DECLARE current_prenom VARCHAR(50);
+    DECLARE current_specialite VARCHAR(50);
+    DECLARE current_email VARCHAR(50);
+    DECLARE current_tel1 VARCHAR(15);
+    DECLARE current_tel2 VARCHAR(15);
+    DECLARE current_adresse VARCHAR(50);
+    DECLARE current_genre VARCHAR(10);
+
     CASE action
-   WHEN 'CREATE' THEN
-            -- 1. Vérification des champs obligatoires
+        WHEN 'CREATE' THEN
+            -- Validation et insertion
             IF p_nom_Medecin IS NULL OR p_nom_Medecin = '' THEN
                 SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Le champ "nom_Medecin" est obligatoire.';
@@ -41,7 +51,7 @@ BEGIN
                 SET MESSAGE_TEXT = 'Le champ "telephone_Medecin_1" est obligatoire.';
             END IF;
 
-            -- 2. Vérification de l'unicité
+            -- Vérification d'unicité
             IF EXISTS (SELECT 1 FROM Medecin WHERE email_Medecin = p_email_Medecin) THEN
                 SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Cet email est déjà utilisé par un autre médecin.';
@@ -52,89 +62,41 @@ BEGIN
                 SET MESSAGE_TEXT = 'Ce numéro de téléphone principal est déjà utilisé par un autre médecin.';
             END IF;
 
-            -- 3. Contrôle des formats
             -- Vérification du genre
             IF p_genre_Medecin NOT IN ('Homme', 'Femme') THEN
                 SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Le champ "genre_Medecin" doit être "Homme" ou "Femme".';
             END IF;
 
-            -- Vérification du format de l'email (simple regex pour les emails)
-            IF p_email_Medecin NOT REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "email_Medecin" doit contenir une adresse email valide.';
-            END IF;
-
-            -- Vérification du format du numéro de téléphone principal
-            IF p_telephone_Medecin_1 NOT REGEXP '^[0-9]{10,15}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "telephone_Medecin_1" doit contenir uniquement des chiffres (10 à 15 caractères).';
-            END IF;
-
-            -- 4. Insérer les données après validation
+            -- Insertion des données
             INSERT INTO Medecin (nom_Medecin, prenom_Medecin, specialite, email_Medecin, telephone_Medecin_1, telephone_Medecin_2, adresse_Medecin, genre_Medecin)
             VALUES (p_nom_Medecin, p_prenom_Medecin, p_specialite, p_email_Medecin, p_telephone_Medecin_1, p_telephone_Medecin_2, p_adresse_Medecin, p_genre_Medecin);
 
-
         WHEN 'READ' THEN
-            SELECT id_Medecin, nom_Medecin, prenom_Medecin, specialite, email_Medecin, telephone_Medecin_1, telephone_Medecin_2, adresse_Medecin, genre_Medecin
+            -- Lecture basée uniquement sur l'ID
+            IF p_id_Medecin IS NULL OR p_id_Medecin = 0 THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'L ID est obligatoire pour lire les informations.';
+            END IF;
+
+            SELECT id_Medecin, nom_Medecin, prenom_Medecin, specialite, email_Medecin, 
+                   telephone_Medecin_1, telephone_Medecin_2, adresse_Medecin, genre_Medecin
             FROM Medecin
             WHERE id_Medecin = p_id_Medecin;
 
-       WHEN 'UPDATE' THEN
-            -- Vérification que l'ID est fourni
+        WHEN 'UPDATE' THEN
+            -- Mise à jour avec vérification d'ID et récupération des anciennes valeurs
             IF p_id_Medecin IS NULL OR p_id_Medecin = 0 THEN
                 SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'ID du médecin est obligatoire pour une mise à jour.';
             END IF;
 
-            -- Vérification que le médecin existe
             IF NOT EXISTS (SELECT 1 FROM Medecin WHERE id_Medecin = p_id_Medecin) THEN
                 SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Aucun médecin trouvé avec cet ID.';
             END IF;
 
-            
-            -- 2. Vérification de l'unicité
-            IF EXISTS (SELECT 1 FROM Medecin WHERE email_Medecin = p_email_Medecin) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Cet email est déjà utilisé par un autre médecin.';
-            END IF;
-
-            IF EXISTS (SELECT 1 FROM Medecin WHERE telephone_Medecin_1 = p_telephone_Medecin_1) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Ce numéro de téléphone principal est déjà utilisé par un autre médecin.';
-            END IF;
-
-            -- Vérification du genre
-            IF p_genre_Medecin NOT IN ('Homme', 'Femme') THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "genre_Medecin" doit être "Homme" ou "Femme".';
-            END IF;
-
-            -- Vérification du format de l'email (simple regex pour les emails)
-            IF p_email_Medecin NOT REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "email_Medecin" doit contenir une adresse email valide.';
-            END IF;
-
-            -- Vérification du format du numéro de téléphone principal
-            IF p_telephone_Medecin_1 NOT REGEXP '^[0-9]{10,15}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "telephone_Medecin_1" doit contenir uniquement des chiffres (10 à 15 caractères).';
-            END IF;
-
-
             -- Récupération des valeurs actuelles si un paramètre est NULL
-            DECLARE current_nom VARCHAR(50);
-            DECLARE current_prenom VARCHAR(50);
-            DECLARE current_specialite VARCHAR(50);
-            DECLARE current_email VARCHAR(50);
-            DECLARE current_tel1 VARCHAR(15);
-            DECLARE current_tel2 VARCHAR(15);
-            DECLARE current_adresse VARCHAR(50);
-            DECLARE current_genre VARCHAR(10);
-
             SELECT nom_Medecin, prenom_Medecin, specialite, email_Medecin, 
                    telephone_Medecin_1, telephone_Medecin_2, adresse_Medecin, genre_Medecin
             INTO current_nom, current_prenom, current_specialite, current_email, 
@@ -142,7 +104,6 @@ BEGIN
             FROM Medecin
             WHERE id_Medecin = p_id_Medecin;
 
-            -- Mise à jour avec les nouvelles valeurs ou conservation des anciennes
             UPDATE Medecin
             SET nom_Medecin = COALESCE(p_nom_Medecin, current_nom),
                 prenom_Medecin = COALESCE(p_prenom_Medecin, current_prenom),
@@ -155,11 +116,17 @@ BEGIN
             WHERE id_Medecin = p_id_Medecin;
 
         WHEN 'DELETE' THEN
+            -- Suppression basée uniquement sur l'ID
+            IF p_id_Medecin IS NULL OR p_id_Medecin = 0 THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'L ID est obligatoire pour supprimer un médecin.';
+            END IF;
+
             DELETE FROM Medecin
             WHERE id_Medecin = p_id_Medecin;
 
         ELSE
-            SIGNAL SQLSTATE '45000' 
+            SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Action non reconnue. Utilisez CREATE, READ, UPDATE ou DELETE.';
     END CASE;
 END $$
@@ -169,12 +136,10 @@ DELIMITER ;
 --END MEDECIN--
 
 
-
 /************************************************************************************************/
 /*                        B. OPERATION CRUD : TABLE COMPTABLE                                   */
 /************************************************************************************************/
 
---START COMPTABLE
 
 DELIMITER $$
 
@@ -188,134 +153,41 @@ CREATE PROCEDURE GererComptable(
     IN p_mail_Comptable VARCHAR(50)
 )
 BEGIN
-    CASE action
-        WHEN 'CREATE' THEN
-            -- 1. Vérification des champs obligatoires
-            IF p_nom_Comptable IS NULL OR p_nom_Comptable = '' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "nom_Comptable" est obligatoire.';
-            END IF;
+    IF action = 'CREATE' THEN
+        -- Insertion d'un nouveau comptable après vérification des champs nécessaires
+        INSERT INTO Comptable (nom_Comptable, prenom_Comptable, telephone_Comptable_1, telephone_Comptable_2, mail_Comptable)
+        VALUES (p_nom_Comptable, p_prenom_Comptable, p_telephone_Comptable_1, p_telephone_Comptable_2, p_mail_Comptable);
 
-            IF p_prenom_Comptable IS NULL OR p_prenom_Comptable = '' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "prenom_Comptable" est obligatoire.';
-            END IF;
+    ELSEIF action = 'READ' THEN
+        -- Lecture des informations d'un comptable
+        SELECT id_Comptable, nom_Comptable, prenom_Comptable, telephone_Comptable_1, telephone_Comptable_2, mail_Comptable
+        FROM Comptable
+        WHERE id_Comptable = p_id_Comptable;
 
-            IF p_mail_Comptable IS NULL OR p_mail_Comptable = '' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "mail_Comptable" est obligatoire.';
-            END IF;
+    ELSEIF action = 'UPDATE' THEN
+        -- Mise à jour des informations d'un comptable
+        UPDATE Comptable
+        SET nom_Comptable = COALESCE(p_nom_Comptable, nom_Comptable),
+            prenom_Comptable = COALESCE(p_prenom_Comptable, prenom_Comptable),
+            telephone_Comptable_1 = COALESCE(p_telephone_Comptable_1, telephone_Comptable_1),
+            telephone_Comptable_2 = COALESCE(p_telephone_Comptable_2, telephone_Comptable_2),
+            mail_Comptable = COALESCE(p_mail_Comptable, mail_Comptable)
+        WHERE id_Comptable = p_id_Comptable;
 
-            IF p_telephone_Comptable_1 IS NULL OR p_telephone_Comptable_1 = '' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "telephone_Comptable_1" est obligatoire.';
-            END IF;
+    ELSEIF action = 'DELETE' THEN
+        -- Suppression d'un comptable
+        DELETE FROM Comptable
+        WHERE id_Comptable = p_id_Comptable;
 
-            -- 2. Vérification de l'unicité
-            IF EXISTS (SELECT 1 FROM Comptable WHERE mail_Comptable = p_mail_Comptable) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Cet email est déjà utilisé par un autre comptable.';
-            END IF;
-
-            IF EXISTS (SELECT 1 FROM Comptable WHERE telephone_Comptable_1 = p_telephone_Comptable_1) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Ce numéro de téléphone principal est déjà utilisé par un autre comptable.';
-            END IF;
-
-            -- 3. Contrôle des formats
-            -- Vérification du format de l'email (simple regex pour les emails)
-            IF p_mail_Comptable NOT REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "mail_Comptable" doit contenir une adresse email valide.';
-            END IF;
-
-            -- Vérification du format du numéro de téléphone principal
-            IF p_telephone_Comptable_1 NOT REGEXP '^[0-9]{10,15}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "telephone_Comptable_1" doit contenir uniquement des chiffres (10 à 15 caractères).';
-            END IF;
-
-            -- 4. Insérer les données après validation
-            INSERT INTO Comptable (nom_Comptable, prenom_Comptable, telephone_Comptable_1, telephone_Comptable_2, mail_Comptable)
-            VALUES (p_nom_Comptable, p_prenom_Comptable, p_telephone_Comptable_1, p_telephone_Comptable_2, p_mail_Comptable);
-
-        WHEN 'READ' THEN
-            SELECT id_Comptable, nom_Comptable, prenom_Comptable, telephone_Comptable_1, telephone_Comptable_2, mail_Comptable
-            FROM Comptable
-            WHERE id_Comptable = p_id_Comptable;
-
-        WHEN 'UPDATE' THEN
-            -- Vérification que l'ID est fourni
-            IF p_id_Comptable IS NULL OR p_id_Comptable = 0 THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'ID du comptable est obligatoire pour une mise à jour.';
-            END IF;
-
-            -- Vérification que le comptable existe
-            IF NOT EXISTS (SELECT 1 FROM Comptable WHERE id_Comptable = p_id_Comptable) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Aucun comptable trouvé avec cet ID.';
-            END IF;
-
-            -- 2. Vérification de l'unicité
-            IF EXISTS (SELECT 1 FROM Comptable WHERE mail_Comptable = p_mail_Comptable) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Cet email est déjà utilisé par un autre comptable.';
-            END IF;
-
-            IF EXISTS (SELECT 1 FROM Comptable WHERE telephone_Comptable_1 = p_telephone_Comptable_1) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Ce numéro de téléphone principal est déjà utilisé par un autre comptable.';
-            END IF;
-
-            -- 3. Contrôles de format
-            -- Vérification du format de l'email
-            IF p_mail_Comptable NOT REGEXP '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "mail_Comptable" doit contenir une adresse email valide.';
-            END IF;
-
-            -- Vérification du format du numéro de téléphone principal
-            IF p_telephone_Comptable_1 NOT REGEXP '^[0-9]{10,15}$' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "telephone_Comptable_1" doit contenir uniquement des chiffres (10 à 15 caractères).';
-            END IF;
-
-            -- Récupération des valeurs actuelles si un paramètre est NULL
-            DECLARE current_nom VARCHAR(50);
-            DECLARE current_prenom VARCHAR(50);
-            DECLARE current_tel1 VARCHAR(15);
-            DECLARE current_tel2 VARCHAR(15);
-            DECLARE current_mail VARCHAR(50);
-
-            SELECT nom_Comptable, prenom_Comptable, telephone_Comptable_1, telephone_Comptable_2, mail_Comptable
-            INTO current_nom, current_prenom, current_tel1, current_tel2, current_mail
-            FROM Comptable
-            WHERE id_Comptable = p_id_Comptable;
-
-            -- Mise à jour avec les nouvelles valeurs ou conservation des anciennes
-            UPDATE Comptable
-            SET nom_Comptable = COALESCE(p_nom_Comptable, current_nom),
-                prenom_Comptable = COALESCE(p_prenom_Comptable, current_prenom),
-                telephone_Comptable_1 = COALESCE(p_telephone_Comptable_1, current_tel1),
-                telephone_Comptable_2 = COALESCE(p_telephone_Comptable_2, current_tel2),
-                mail_Comptable = COALESCE(p_mail_Comptable, current_mail)
-            WHERE id_Comptable = p_id_Comptable;
-
-        WHEN 'DELETE' THEN
-            DELETE FROM Comptable
-            WHERE id_Comptable = p_id_Comptable;
-
-        ELSE
-            SIGNAL SQLSTATE '45000' 
-            SET MESSAGE_TEXT = 'Action non reconnue. Utilisez CREATE, READ, UPDATE ou DELETE.';
-    END CASE;
+    ELSE
+        -- Gestion des actions non reconnues
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Action non reconnue. Utilisez CREATE, READ, UPDATE ou DELETE.';
+    END IF;
 END $$
 
 DELIMITER ;
-
---END COMPTABLE--
-
+--FIN COMPTABLE--
 
 
 
@@ -333,97 +205,98 @@ CREATE PROCEDURE GererSalle(
     IN p_type_Salle VARCHAR(50)
 )
 BEGIN
-    CASE action
-        WHEN 'CREATE' THEN
-            -- 1. Vérification des champs obligatoires
-            IF p_nom_Salle IS NULL OR p_nom_Salle = '' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "nom_Salle" est obligatoire.';
-            END IF;
+    IF action = 'CREATE' THEN
+        -- Vérification des champs obligatoires
+        IF p_nom_Salle IS NULL OR p_nom_Salle = '' THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Le champ "nom_Salle" est obligatoire.';
+        END IF;
 
-            IF p_type_Salle IS NULL OR p_type_Salle = '' THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "type_Salle" est obligatoire.';
-            END IF;
+        IF p_type_Salle IS NULL OR p_type_Salle = '' THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Le champ "type_Salle" est obligatoire.';
+        END IF;
 
-            -- 2. Vérification de l'unicité
-            IF EXISTS (SELECT 1 FROM Salle WHERE nom_Salle = p_nom_Salle) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Une salle avec ce nom existe déjà.';
-            END IF;
+        -- Vérification de l'unicité du nom de la salle
+        IF EXISTS (SELECT 1 FROM Salle WHERE nom_Salle = p_nom_Salle) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Une salle avec ce nom existe déjà.';
+        END IF;
 
-            -- 3. Vérification de la longueur des champs (si nécessaire)
-            IF LENGTH(p_nom_Salle) > 50 THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "nom_Salle" ne peut pas dépasser 50 caractères.';
-            END IF;
+        -- Vérification de la longueur des champs
+        IF LENGTH(p_nom_Salle) > 50 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Le champ "nom_Salle" ne peut pas dépasser 50 caractères.';
+        END IF;
 
-            IF LENGTH(p_type_Salle) > 50 THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Le champ "type_Salle" ne peut pas dépasser 50 caractères.';
-            END IF;
+        IF LENGTH(p_type_Salle) > 50 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Le champ "type_Salle" ne peut pas dépasser 50 caractères.';
+        END IF;
 
-            -- 4. Insérer les données après validation
-            INSERT INTO Salle (nom_Salle, type_Salle)
-            VALUES (p_nom_Salle, p_type_Salle);
+        -- Insertion de la nouvelle salle après validation
+        INSERT INTO Salle (nom_Salle, type_Salle)
+        VALUES (p_nom_Salle, p_type_Salle);
 
-        WHEN 'READ' THEN
-            SELECT id_Salle, nom_Salle, type_Salle
-            FROM Salle
-            WHERE id_Salle = p_id_Salle;
+    ELSEIF action = 'READ' THEN
+        -- Lecture des informations de la salle par son ID
+        SELECT id_Salle, nom_Salle, type_Salle
+        FROM Salle
+        WHERE id_Salle = p_id_Salle;
 
-        WHEN 'UPDATE' THEN
-            -- Vérification que l'ID est fourni
-            IF p_id_Salle IS NULL OR p_id_Salle = 0 THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'ID de la salle est obligatoire pour une mise à jour.';
-            END IF;
+    ELSEIF action = 'UPDATE' THEN
+        -- Vérification que l'ID de la salle est fourni
+        IF p_id_Salle IS NULL OR p_id_Salle = 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'L ID de la salle est obligatoire pour une mise à jour.';
+        END IF;
 
-            -- Vérification que la salle existe
-            IF NOT EXISTS (SELECT 1 FROM Salle WHERE id_Salle = p_id_Salle) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Aucune salle trouvée avec cet ID.';
-            END IF;
+        -- Vérification que la salle existe dans la base de données
+        IF NOT EXISTS (SELECT 1 FROM Salle WHERE id_Salle = p_id_Salle) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aucune salle trouvée avec cet ID.';
+        END IF;
 
-            -- 2. Vérification de l'unicité pour le nom de la salle
-            IF EXISTS (SELECT 1 FROM Salle WHERE nom_Salle = p_nom_Salle AND id_Salle != p_id_Salle) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Une salle avec ce nom existe déjà.';
-            END IF;
+        -- Vérification de l'unicité du nom pour la mise à jour
+        IF EXISTS (SELECT 1 FROM Salle WHERE nom_Salle = p_nom_Salle AND id_Salle != p_id_Salle) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Une salle avec ce nom existe déjà.';
+        END IF;
 
-            -- 3. Mise à jour des données
-            UPDATE Salle
-            SET nom_Salle = p_nom_Salle,
-                type_Salle = p_type_Salle
-            WHERE id_Salle = p_id_Salle;
+        -- Mise à jour de la salle
+        UPDATE Salle
+        SET nom_Salle = p_nom_Salle,
+            type_Salle = p_type_Salle
+        WHERE id_Salle = p_id_Salle;
 
-        WHEN 'DELETE' THEN
-            -- Vérification que l'ID est fourni
-            IF p_id_Salle IS NULL OR p_id_Salle = 0 THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'ID de la salle est obligatoire pour une suppression.';
-            END IF;
+    ELSEIF action = 'DELETE' THEN
+        -- Vérification que l'ID de la salle est fourni pour la suppression
+        IF p_id_Salle IS NULL OR p_id_Salle = 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'L ID de la salle est obligatoire pour une suppression.';
+        END IF;
 
-            -- Vérification que la salle existe
-            IF NOT EXISTS (SELECT 1 FROM Salle WHERE id_Salle = p_id_Salle) THEN
-                SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Aucune salle trouvée avec cet ID.';
-            END IF;
+        -- Vérification que la salle existe avant de la supprimer
+        IF NOT EXISTS (SELECT 1 FROM Salle WHERE id_Salle = p_id_Salle) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aucune salle trouvée avec cet ID.';
+        END IF;
 
-            -- Suppression de la salle
-            DELETE FROM Salle
-            WHERE id_Salle = p_id_Salle;
+        -- Suppression de la salle
+        DELETE FROM Salle
+        WHERE id_Salle = p_id_Salle;
 
-        ELSE
-            SIGNAL SQLSTATE '45000' 
-            SET MESSAGE_TEXT = 'Action non reconnue. Utilisez CREATE, READ, UPDATE ou DELETE.';
-    END CASE;
+    ELSE
+        -- Gestion des erreurs en cas d'action non reconnue
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Action non reconnue. Utilisez CREATE, READ, UPDATE ou DELETE.';
+    END IF;
 END $$
 
 DELIMITER ;
 
---END SALLE--
 
+--END SALLE--
 
 
 
@@ -437,15 +310,15 @@ DELIMITER $$
 CREATE PROCEDURE GererReceptionniste(
     IN p_action VARCHAR(10),
     IN p_id_Receptionniste INT,
-    IN p_nom_Receptionniste VARCHAR(50) DEFAULT NULL,
-    IN p_prenom_Receptionniste VARCHAR(50) DEFAULT NULL,
-    IN p_email_Receptionniste VARCHAR(50) DEFAULT NULL,
-    IN p_telephone_Receptionniste_1 VARCHAR(15) DEFAULT NULL,
-    IN p_telephone_Receptionniste_2 VARCHAR(15) DEFAULT NULL
+    IN p_nom_Receptionniste VARCHAR(50),
+    IN p_prenom_Receptionniste VARCHAR(50),
+    IN p_email_Receptionniste VARCHAR(50),
+    IN p_telephone_Receptionniste_1 VARCHAR(15),
+    IN p_telephone_Receptionniste_2 VARCHAR(15)
 )
 BEGIN
     -- Validation des champs obligatoires pour l'ajout et la mise à jour
-    IF p_action IN ('ajouter', 'mettre_a_jour') THEN
+    IF p_action IN ('CREATE', 'UPDATE') THEN
         IF p_nom_Receptionniste IS NULL OR p_nom_Receptionniste = '' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le champ "nom_Receptionniste" est obligatoire.';
         END IF;
@@ -476,7 +349,7 @@ BEGIN
     END IF;
 
     -- Actions de la procédure selon le type d'action
-    IF p_action = 'ajouter' THEN
+    IF p_action = 'CREATE' THEN
         INSERT INTO Receptionniste (nom_Receptionniste, prenom_Receptionniste, 
                                      email_Receptionniste, telephone_Receptionniste_1, 
                                      telephone_Receptionniste_2)
@@ -484,13 +357,13 @@ BEGIN
                 p_email_Receptionniste, p_telephone_Receptionniste_1, 
                 p_telephone_Receptionniste_2);
 
-    ELSEIF p_action = 'lire' THEN
+    ELSEIF p_action = 'READ' THEN
         SELECT id_Receptionniste, nom_Receptionniste, prenom_Receptionniste,
                email_Receptionniste, telephone_Receptionniste_1, telephone_Receptionniste_2
         FROM Receptionniste
         WHERE id_Receptionniste = p_id_Receptionniste;
     
-    ELSEIF p_action = 'mettre_a_jour' THEN
+    ELSEIF p_action = 'UPDATE' THEN
         -- Vérification que le réceptionniste existe avant de mettre à jour
         IF NOT EXISTS (SELECT 1 FROM Receptionniste WHERE id_Receptionniste = p_id_Receptionniste) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le réceptionniste avec cet ID n existe pas.';
@@ -506,7 +379,7 @@ BEGIN
             telephone_Receptionniste_2 = IFNULL(p_telephone_Receptionniste_2, telephone_Receptionniste_2)  -- Si p_telephone_Receptionniste_2 est NULL, garde l'ancienne valeur
         WHERE id_Receptionniste = p_id_Receptionniste;
     
-    ELSEIF p_action = 'supprimer' THEN
+    ELSEIF p_action = 'DELETE' THEN
         -- Vérification que le réceptionniste existe avant de supprimer
         IF NOT EXISTS (SELECT 1 FROM Receptionniste WHERE id_Receptionniste = p_id_Receptionniste) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le réceptionniste avec cet ID existe pas.';
@@ -515,12 +388,13 @@ BEGIN
         DELETE FROM Receptionniste
         WHERE id_Receptionniste = p_id_Receptionniste;
 
-        ELSE
+    ELSE
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Action non reconnue. Utilisez "ajouter", "lire", "mettre_a_jour" ou "supprimer".';
     END IF;
 END $$
 
 DELIMITER ;
+
 
 --END RECEPTIONNISTE
 
@@ -535,12 +409,12 @@ DELIMITER $$
 CREATE PROCEDURE GererChambre(
     IN p_action VARCHAR(10),
     IN p_id_Chambre INT,
-    IN p_numero_Lit INT DEFAULT NULL,
-    IN p_capacite INT DEFAULT NULL
+    IN p_numero_Lit INT,
+    IN p_capacite INT
 )
 BEGIN
     -- Validation des champs obligatoires
-    IF p_action IN ('ajouter', 'mettre_a_jour') THEN
+    IF p_action IN ('CREATE', 'UPDATE') THEN
         -- Vérification que la capacité est un nombre positif
         IF p_capacite IS NULL OR p_capacite <= 0 THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La capacité doit être un nombre positif.';
@@ -553,29 +427,29 @@ BEGIN
     END IF;
 
     -- Actions selon le type d'action
-    IF p_action = 'ajouter' THEN
+    IF p_action = 'CREATE' THEN
         INSERT INTO Chambre (numero_Lit, capacite)
         VALUES (p_numero_Lit, p_capacite);
     
-    ELSEIF p_action = 'lire' THEN
+    ELSEIF p_action = 'READ' THEN
         SELECT id_Chambre, numero_Lit, capacite
         FROM Chambre
         WHERE id_Chambre = p_id_Chambre;
     
-    ELSEIF p_action = 'mettre_a_jour' THEN
+    ELSEIF p_action = 'UPDATE' THEN
         -- Vérification que la chambre existe avant de mettre à jour
         IF NOT EXISTS (SELECT 1 FROM Chambre WHERE id_Chambre = p_id_Chambre) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La chambre avec cet ID n existe pas.';
         END IF;
 
-        -- Mise à jour des champs uniquement s ils sont fournis
+        -- Mise à jour des champs uniquement s'ils sont fournis
         UPDATE Chambre
         SET 
-            numero_Lit = IFNULL(p_numero_Lit, numero_Lit),  -- Si p_numero_Lit est NULL, garde l'ancienne valeur
-            capacite = IFNULL(p_capacite, capacite)  -- Si p_capacite est NULL, garde l'ancienne valeur
+            numero_Lit = IF(p_numero_Lit IS NOT NULL, p_numero_Lit, numero_Lit),  -- Si p_numero_Lit est NULL, garde l'ancienne valeur
+            capacite = IF(p_capacite IS NOT NULL, p_capacite, capacite)  -- Si p_capacite est NULL, garde l'ancienne valeur
         WHERE id_Chambre = p_id_Chambre;
     
-    ELSEIF p_action = 'supprimer' THEN
+    ELSEIF p_action = 'DELETE' THEN
         -- Vérification que la chambre existe avant de supprimer
         IF NOT EXISTS (SELECT 1 FROM Chambre WHERE id_Chambre = p_id_Chambre) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La chambre avec cet ID existe pas.';
@@ -584,13 +458,14 @@ BEGIN
         DELETE FROM Chambre
         WHERE id_Chambre = p_id_Chambre;
 
-         ELSE
+    ELSE
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Action non reconnue. Utilisez "ajouter", "lire", "mettre_a_jour" ou "supprimer".';
     
     END IF;
 END $$
 
 DELIMITER ;
+
 
 --END CHAMBRE
 
@@ -599,26 +474,25 @@ DELIMITER ;
 /*                              F. OPERATION CRUD : TABLE PATIENT                               */
 /************************************************************************************************/
 
-
 --START PATIENT
 DELIMITER $$
 
 CREATE PROCEDURE GererPatient(
     IN p_action VARCHAR(10),
     IN p_id_Patient INT,
-    IN p_nom_Patient VARCHAR(50) DEFAULT NULL,
-    IN p_prenom_Patient VARCHAR(50) DEFAULT NULL,
-    IN p_genre_Patient VARCHAR(10) DEFAULT NULL,
-    IN p_date_naissance DATE DEFAULT NULL,
-    IN p_telephone_Patient_1 VARCHAR(15) DEFAULT NULL,
-    IN p_telephone_Patient_2 VARCHAR(15) DEFAULT NULL,
-    IN p_email_Patient VARCHAR(50) DEFAULT NULL,
-    IN p_adresse_Patient VARCHAR(50) DEFAULT NULL,
-    IN p_id_Chambre INT DEFAULT NULL
+    IN p_nom_Patient VARCHAR(50),
+    IN p_prenom_Patient VARCHAR(50),
+    IN p_genre_Patient VARCHAR(10),
+    IN p_date_naissance DATE,
+    IN p_telephone_Patient_1 VARCHAR(15),
+    IN p_telephone_Patient_2 VARCHAR(15),
+    IN p_email_Patient VARCHAR(50),
+    IN p_adresse_Patient VARCHAR(50),
+    IN p_id_Chambre INT
 )
 BEGIN
     -- Validation des champs obligatoires pour l'ajout et la mise à jour
-    IF p_action IN ('ajouter', 'mettre_a_jour') THEN
+    IF p_action IN ('CREATE', 'UPDATE') THEN
         IF p_nom_Patient IS NULL OR p_nom_Patient = '' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le champ "nom_Patient" est obligatoire.';
         END IF;
@@ -649,19 +523,19 @@ BEGIN
     END IF;
 
     -- Actions de la procédure selon le type d'action
-    IF p_action = 'ajouter' THEN
+    IF p_action = 'CREATE' THEN
         INSERT INTO Patient (nom_Patient, prenom_Patient, genre_Patient, date_naissance, 
                              telephone_Patient_1, telephone_Patient_2, email_Patient, adresse_Patient, id_Chambre)
         VALUES (p_nom_Patient, p_prenom_Patient, p_genre_Patient, p_date_naissance, 
                 p_telephone_Patient_1, p_telephone_Patient_2, p_email_Patient, p_adresse_Patient, p_id_Chambre);
     
-    ELSEIF p_action = 'lire' THEN
+    ELSEIF p_action = 'READ' THEN
         SELECT id_Patient, nom_Patient, prenom_Patient, genre_Patient, date_naissance, 
                telephone_Patient_1, telephone_Patient_2, email_Patient, adresse_Patient, id_Chambre
         FROM Patient
         WHERE id_Patient = p_id_Patient;
     
-    ELSEIF p_action = 'mettre_a_jour' THEN
+    ELSEIF p_action = 'UPDATE' THEN
         -- Vérification que le patient existe avant de mettre à jour
         IF NOT EXISTS (SELECT 1 FROM Patient WHERE id_Patient = p_id_Patient) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le patient avec cet ID n existe pas.';
@@ -681,7 +555,7 @@ BEGIN
             id_Chambre = IFNULL(p_id_Chambre, id_Chambre)  -- Si p_id_Chambre est NULL, garde l'ancienne valeur
         WHERE id_Patient = p_id_Patient;
     
-    ELSEIF p_action = 'supprimer' THEN
+    ELSEIF p_action = 'DELETE' THEN
         -- Vérification que le patient existe avant de supprimer
         IF NOT EXISTS (SELECT 1 FROM Patient WHERE id_Patient = p_id_Patient) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le patient avec cet ID n existe pas.';
@@ -690,14 +564,16 @@ BEGIN
         DELETE FROM Patient
         WHERE id_Patient = p_id_Patient;
 
-        ELSE
-         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Action non reconnue. Utilisez "ajouter", "lire", "mettre_a_jour" ou "supprimer".';
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Action non reconnue. Utilisez "ajouter", "lire", "mettre_a_jour" ou "supprimer".';
     
     END IF;
 END $$
 
 DELIMITER ;
+
 --END PATIENT
+
 
 
 /************************************************************************************************/
@@ -710,15 +586,15 @@ DELIMITER $$
 CREATE PROCEDURE GererDossierMedical(
     IN p_action VARCHAR(10),
     IN p_id_dossier INT,
-    IN p_groupe_Sanguin VARCHAR(5) DEFAULT NULL,
-    IN p_statut_Rhesus VARCHAR(10) DEFAULT NULL,
-    IN p_observation VARCHAR(500) DEFAULT NULL,
-    IN p_id_Receptionniste INT DEFAULT NULL,
-    IN p_id_Patient INT DEFAULT NULL
+    IN p_groupe_Sanguin VARCHAR(5) ,
+    IN p_statut_Rhesus VARCHAR(10) ,
+    IN p_observation VARCHAR(500) ,
+    IN p_id_Receptionniste INT ,
+    IN p_id_Patient INT 
 )
 BEGIN
     -- Validation des champs obligatoires pour l'ajout et la mise à jour
-    IF p_action IN ('ajouter', 'mettre_a_jour') THEN
+    IF p_action IN ('READ', 'UPDATE') THEN
         -- Vérification des valeurs obligatoires
         IF p_groupe_Sanguin IS NULL OR p_groupe_Sanguin = '' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le champ "groupe_Sanguin" est obligatoire.';
@@ -739,16 +615,16 @@ BEGIN
     END IF;
 
     -- Actions de la procédure selon le type d'action
-    IF p_action = 'ajouter' THEN
+    IF p_action = 'CREATE' THEN
         INSERT INTO Dossier_Medical (groupe_Sanguin, statut_Rhesus, observation, id_Receptionniste, id_Patient)
         VALUES (p_groupe_Sanguin, p_statut_Rhesus, p_observation, p_id_Receptionniste, p_id_Patient);
     
-    ELSEIF p_action = 'lire' THEN
+    ELSEIF p_action = 'READ' THEN
         SELECT id_dossier, groupe_Sanguin, statut_Rhesus, observation, date_Ouverture, id_Receptionniste, id_Patient
         FROM Dossier_Medical
         WHERE id_dossier = p_id_dossier;
     
-    ELSEIF p_action = 'mettre_a_jour' THEN
+    ELSEIF p_action = 'UPDATE' THEN
         -- Vérification que le dossier médical existe avant de mettre à jour
         IF NOT EXISTS (SELECT 1 FROM Dossier_Medical WHERE id_dossier = p_id_dossier) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le dossier médical avec cet ID n existe pas.';
@@ -762,7 +638,7 @@ BEGIN
             observation = IFNULL(p_observation, observation)  -- Si p_observation est NULL, garde l'ancienne valeur
         WHERE id_dossier = p_id_dossier;
     
-    ELSEIF p_action = 'supprimer' THEN
+    ELSEIF p_action = 'DELETE' THEN
         -- Vérification que le dossier médical existe avant de supprimer
         IF NOT EXISTS (SELECT 1 FROM Dossier_Medical WHERE id_dossier = p_id_dossier) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Le dossier médical avec cet ID n existe pas.';
@@ -775,6 +651,7 @@ END $$
 
 DELIMITER ;
 --END DOSSIER MEDICAL
+
 
 
 /************************************************************************************************/
@@ -864,10 +741,15 @@ DELIMITER ;
 
 --END FEUILLE--
 
+
+
+
+
 /************************************************************************************************/
 /*                        I. OPERATION CRUD : TABLE TRAITEMENT                                  */
 /************************************************************************************************/
 
+---END TRAITEMENT----
 DELIMITER $$
 
 CREATE PROCEDURE GererTraitement(
@@ -950,85 +832,86 @@ END$$
 
 DELIMITER ;
 
+---END TRAITEMENT-----
 
--DELIMITER $$
 
-CREATE PROCEDURE GererTraitement(
-    IN action VARCHAR(10),
-    IN p_id_Traitement INT,
-    IN p_remarque_Traitement VARCHAR(300),
-    IN p_conclusion VARCHAR(100),
-    IN p_date_heure DATETIME,
-    IN p_id_Salle INT,
-    IN p_id_Medecin INT,
-    IN p_id_Feuille INT
+
+
+/************************************************************************************************/
+/*                        J. OPERATION CRUD : TABLE FACTURATION                                  */
+/************************************************************************************************/
+
+--FACTURATION----
+DELIMITER $$
+
+CREATE PROCEDURE GererFacturation(
+    IN p_action VARCHAR(10),
+    IN p_id_Facturation INT,
+    IN p_montant DECIMAL(10,2),
+    IN p_acteur VARCHAR(50),
+    IN p_telephone_Acteur VARCHAR(15),
+    IN p_id_Patient INT,
+    IN p_id_Comptable INT,
+    IN p_id_Feuille INT,
+    IN p_est_Payee TINYINT(1),
+    IN p_date_Paiement DATETIME
 )
 BEGIN
-    IF action = 'CREATE' THEN
-        -- Vérification des champs obligatoires
-        IF p_remarque_Traitement IS NULL OR LENGTH(p_remarque_Traitement) = 0 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Le champ remarque_Traitement est obligatoire.';
-        END IF;
+    -- Handling default values inside the procedure
+    SET p_est_Payee = IFNULL(p_est_Payee, 0);  -- Default to 0 (FALSE) if NULL
+    SET p_date_Paiement = IFNULL(p_date_Paiement, NULL);  -- Default to NULL if NULL
 
-        IF p_date_heure IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Le champ date_heure est obligatoire.';
+    -- Validation des champs obligatoires pour les actions de lecture, mise à jour et suppression
+    IF p_action IN ('READ', 'UPDATE', 'DELETE') THEN
+        -- Vérification de l'existence de la facture pour READ et UPDATE
+        IF p_id_Facturation IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'L ID de la facturation est obligatoire.';
         END IF;
-
-        IF p_id_Salle IS NULL OR NOT EXISTS (SELECT 1 FROM Salle WHERE id_Salle = p_id_Salle) THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'La Salle spécifiée n existe pas.';
-        END IF;
-
-        -- Validation de format (exemple pour p_date_heure)
-        IF NOT p_date_heure REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$' THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Le format de date_heure est invalide. Utilisez AAAA-MM-JJ HH:MM:SS.';
-        END IF;
-
-        -- Validation de la taille de remarque_Traitement
-        IF LENGTH(p_remarque_Traitement) > 300 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Le champ remarque_Traitement dépasse la longueur maximale de 300 caractères.';
-        END IF;
-
-        -- Validation d'un format numérique (exemple pour p_id_Salle)
-        IF NOT p_id_Salle REGEXP '^[0-9]+$' THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Le champ id_Salle doit être un entier.';
-        END IF;
-
-        -- Validation d'un champ texte simple (exemple pour p_conclusion)
-        IF NOT p_conclusion REGEXP '^[A-Za-z0-9 ]+$' THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Le champ conclusion contient des caractères non autorisés.';
-        END IF;
-
-        -- Insertion après toutes les validations
-        INSERT INTO Traitement (remarque_Traitement, conclusion, date_heure, id_Salle, id_Medecin, id_Feuille)
-        VALUES (p_remarque_Traitement, p_conclusion, p_date_heure, p_id_Salle, p_id_Medecin, p_id_Feuille);
-    
-    ELSEIF action = 'READ' THEN
-        SELECT * FROM Traitement WHERE id_Traitement = p_id_Traitement;
-    
-    ELSEIF action = 'UPDATE' THEN
-        UPDATE Traitement
-        SET remarque_Traitement = p_remarque_Traitement,
-            conclusion = p_conclusion,
-            date_heure = p_date_heure,
-            id_Salle = p_id_Salle,
-            id_Medecin = p_id_Medecin,
-            id_Feuille = p_id_Feuille
-        WHERE id_Traitement = p_id_Traitement;
-    
-    ELSEIF action = 'DELETE' THEN
-        DELETE FROM Traitement WHERE id_Traitement = p_id_Traitement;
-    
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Action non reconnue. Utilisez CREATE, READ, UPDATE ou DELETE.';
     END IF;
-END$$
+
+    -- Si c'est une mise à jour, vérifier si la facture existe
+    IF p_action = 'UPDATE' AND NOT EXISTS (SELECT 1 FROM Facturation WHERE id_Facturation = p_id_Facturation) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La facture avec cet ID n existe pas.';
+    END IF;
+
+    -- Si c'est une suppression, vérifier si la facture existe
+    IF p_action = 'DELETE' AND NOT EXISTS (SELECT 1 FROM Facturation WHERE id_Facturation = p_id_Facturation) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La facture avec cet ID n existe pas.';
+    END IF;
+
+    -- Exécution de l'action demandée
+    IF p_action = 'CREATE' THEN
+        -- Insertion d'une nouvelle facture
+        INSERT INTO Facturation (montant, acteur, telephone_Acteur, id_Patient, id_Comptable, id_Feuille)
+        VALUES (p_montant, p_acteur, p_telephone_Acteur, p_id_Patient, p_id_Comptable, p_id_Feuille);
+    
+    ELSEIF p_action = 'READ' THEN
+        -- Lecture d'une facture par ID
+        SELECT id_Facturation, date_emission, est_Payee, date_Paiement, montant, acteur, telephone_Acteur, id_Patient, id_Comptable, id_Feuille
+        FROM Facturation
+        WHERE id_Facturation = p_id_Facturation;
+    
+    ELSEIF p_action = 'UPDATE' THEN
+        -- Mise à jour de la facture
+        UPDATE Facturation
+        SET
+            est_Payee = IFNULL(p_est_Payee, est_Payee),
+            date_Paiement = IFNULL(p_date_Paiement, date_Paiement),
+            montant = IFNULL(p_montant, montant),
+            acteur = IFNULL(p_acteur, acteur),
+            telephone_Acteur = IFNULL(p_telephone_Acteur, telephone_Acteur),
+            id_Patient = IFNULL(p_id_Patient, id_Patient),
+            id_Comptable = IFNULL(p_id_Comptable, id_Comptable),
+            id_Feuille = IFNULL(p_id_Feuille, id_Feuille)
+        WHERE id_Facturation = p_id_Facturation;
+    
+    ELSEIF p_action = 'DELETE' THEN
+        -- Suppression d'une facture
+        DELETE FROM Facturation
+        WHERE id_Facturation = p_id_Facturation;
+    END IF;
+END $$
 
 DELIMITER ;
+
+

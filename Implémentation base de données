@@ -2,15 +2,21 @@
 /*                          A. CREATION BASE DE DONNEES                                         */
 /************************************************************************************************/
 
-CREATE DATABASE IF NOT EXISTS gestion_Hopital_db;
+CREATE DATABASE gestion_Hopital_db;
 USE gestion_Hopital_db;
 
 /************************************************************************************************/
 /*                            B. CREATION DES TABLES                                            */
 /*************************************************************************************************/
 
-CREATE DATABASE gestion_Hopital_db;
-USE gestion_Hopital_db;
+CREATE TABLE Users (
+   id_User INT AUTO_INCREMENT PRIMARY KEY,
+   user_Name VARCHAR(50) NOT NULL,
+   password VARCHAR(50) NOT NULL,
+   role VARCHAR(50) NOT NULL CHECK (role IN ('Medecin', 'Comptable', 'Receptionniste')),
+   UNIQUE(user_Name),
+   UNIQUE(password)
+);
 
 CREATE TABLE Medecin(
    id_Medecin INT AUTO_INCREMENT PRIMARY KEY,
@@ -54,15 +60,6 @@ CREATE TABLE Receptionniste(
    telephone_Receptionniste_2 VARCHAR(15),
    UNIQUE(email_Receptionniste),
    UNIQUE(telephone_Receptionniste_1)
-);
-
-CREATE TABLE Users(
-   id_User INT AUTO_INCREMENT PRIMARY KEY,
-   user_Name VARCHAR(50) NOT NULL,
-   password VARCHAR(50) NOT NULL,
-   role VARCHAR(50) NOT NULL,
-   UNIQUE(user_name),
-   UNIQUE(password)
 );
 
 CREATE TABLE Chambre(
@@ -140,3 +137,15 @@ CREATE TABLE Facturation(
    FOREIGN KEY(id_Comptable) REFERENCES Comptable(id_Comptable),
    FOREIGN KEY(id_Feuille) REFERENCES Feuille(id_Feuille)
 );
+
+ALTER TABLE Medecin
+ADD id_User INT UNIQUE,
+ADD FOREIGN KEY (id_User) REFERENCES Users(id_User);
+
+ALTER TABLE Comptable
+ADD id_User INT UNIQUE,
+ADD FOREIGN KEY (id_User) REFERENCES Users(id_User);
+
+ALTER TABLE Receptionniste
+ADD id_User INT UNIQUE,
+ADD FOREIGN KEY (id_User) REFERENCES Users(id_User);

@@ -1,0 +1,67 @@
+#parentWidget {
+    background-color: #75B4FF;
+    border: none;
+}
+
+#rightSidebarWidget {
+    background-color: #8E8E8E;
+    border: none;
+}
+
+QVBoxLayout, QHBoxLayout {
+    background: transparent;
+}
+
+#patientTable {
+    border: none;
+    gridline-color: transparent;
+    selection-background-color: #8E8E8E;
+}
+
+QTableWidget::item {
+    border: none;
+    padding: 0px;
+}
+
+QTableWidget::item:selected {
+    background-color: #FFA500;
+}
+
+QHeaderView::section:horizontal {
+    background-color: #8E8E8E;
+    color: white;
+    padding: 4px;
+    font-weight: bold;
+    border: none;
+    text-align: left;
+}
+
+QHeaderView::section:vertical {
+    background-color: transparent;
+    border: none;
+}
+
+QListWidget {
+    font-size: 13px;
+    padding: 10px;
+    outline: 0;
+}
+
+QListWidget::item {
+    margin: 8px 0px;
+    padding: 10px;
+    border: none;
+    outline: none;
+}
+
+QListWidget::item:selected {
+    background-color: #75B4FF;
+    color: white;
+    border: none;
+    outline: none;
+}
+
+QListWidget::item:selected:focus {
+    border: none;
+    outline: none;
+}
